@@ -63,7 +63,7 @@ public class Classify extends AppCompatActivity {
     private String chosen;
     private boolean quant;
 
-    // input image dimensions for the Inception Model
+    // input image dimensions for the Mobilenets Model
     private int DIM_IMG_SIZE_X = 224;
     private int DIM_IMG_SIZE_Y = 224;
     private int DIM_PIXEL_SIZE = 3;
@@ -179,9 +179,10 @@ public class Classify extends AppCompatActivity {
                     tflite.run(imgData, labelProbArrayB);
                 } else {
                     tflite.run(imgData, labelProbArray);
+                    printTopKLabels();
                 }
-                // display the results
-                printTopKLabels();
+
+//                printTopKLabels();
             }
         });
 
