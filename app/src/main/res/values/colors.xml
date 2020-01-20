@@ -3,5 +3,9 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
-    <color name="teal">#008080</color>
+    <color name="teal">#52938F</color>
+
+    <color name="semi_transparent">#66000000</color>
+
+    <color name="black_overlay">#66000000</color>
 </resources>
