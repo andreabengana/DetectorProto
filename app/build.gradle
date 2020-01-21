@@ -31,6 +31,7 @@ android {
     sourceSets {
         main {
             java.srcDirs = ['src/main/java', 'src/main/java/com/example/thatboydre_35/detectorproto/customview']
+            jni.srcDirs = ['src/main/jni', 'src/main/jni/']
         }
     }
 

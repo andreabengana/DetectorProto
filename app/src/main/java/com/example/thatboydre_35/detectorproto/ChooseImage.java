@@ -36,6 +36,7 @@ public class ChooseImage extends AppCompatActivity {
 
     // button for each available classifier
     private Button inceptionFloat;
+    private Button haarCascade;
 
     // for permission requests
     public static final int REQUEST_PERMISSION = 300;
@@ -71,9 +72,19 @@ public class ChooseImage extends AppCompatActivity {
                 openCameraIntent();
             }
         });
+
+        haarCascade = (Button) findViewById(R.id.haar_cascade);
+        haarCascade.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                quant = true;
+                // open camera
+                openCameraIntent();
+            }
+        });
     }
 
-    // opens camera for user
+
     private void openCameraIntent(){
 //        ContentValues values = new ContentValues();
 //        values.put(MediaStore.Images.Media.TITLE, "New Picture");

@@ -2,6 +2,7 @@ package com.example.thatboydre_35.detectorproto;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.os.Bundle;
 
 import android.content.Intent;
@@ -12,17 +13,25 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Size;
+import org.opencv.engine.OpenCVEngineInterface;
 import org.tensorflow.lite.Interpreter;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -34,6 +43,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.android.Utils;
+
 
 public class Classify extends AppCompatActivity {
 
@@ -83,6 +101,14 @@ public class Classify extends AppCompatActivity {
     private TextView Confidence3;
     private TextView textview;
 
+
+    private File mCascadeFile;
+    private CascadeClassifier mJavaDetector;
+    private static final String    TAG                 = "OCVSample::Activity";
+    private Mat mRgba;
+    private int mAbsoluteFaceSize = 0;
+    private float                  mRelativeFaceSize   = 0.2f;
+
     // priority queue that will hold the top results from the CNN
     private PriorityQueue<Map.Entry<String, Float>> sortedLabels =
             new PriorityQueue<>(
@@ -94,6 +120,48 @@ public class Classify extends AppCompatActivity {
                         }
                     });
 
+    private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS: {
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    mRgba = new Mat();
+                    try{
+                        InputStream is = getResources().openRawResource(R.raw.cascade);
+                        File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
+                        mCascadeFile = new File(cascadeDir, "cascade.xml");
+                        FileOutputStream os = new FileOutputStream(mCascadeFile);
+
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = is.read(buffer)) != -1) {
+                            os.write(buffer, 0, bytesRead);
+                        }
+                        is.close();
+                        os.close();
+
+                        mJavaDetector = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+                        if (mJavaDetector.empty()) {
+                            Log.e(TAG, "Failed to load cascade classifier");
+                            mJavaDetector = null;
+                        } else
+                            Log.i(TAG, "Loaded cascade classifier from " + mCascadeFile.getAbsolutePath());
+                        cascadeDir.delete();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        Log.e(TAG, "Failed to load cascade. Exception thrown: " + e);
+                    }
+
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // get all selected classifier data from classifiers
@@ -103,14 +171,16 @@ public class Classify extends AppCompatActivity {
         // initialize array that holds image data
         intValues = new int[DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y];
 
+
+
+        textview = (TextView) findViewById(R.id.textView);
         super.onCreate(savedInstanceState);
 
         //initilize graph and labels
         try{
             tflite = new Interpreter(loadModelFile(), tfliteOptions);
             labelList = loadLabelList();
-            textview = (TextView) findViewById(R.id.textView);
-            textview.setText(labelList.get(0));
+
 
         } catch (Exception ex){
             ex.printStackTrace();
@@ -118,19 +188,19 @@ public class Classify extends AppCompatActivity {
 
         // initialize byte array. The size depends if the input data needs to be quantized or not
         if(quant){
-            imgData =
-                    ByteBuffer.allocateDirect(
-                            DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE);
+//            imgData =
+//                    ByteBuffer.allocateDirect(
+//                            DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE);
         } else {
             imgData =
                     ByteBuffer.allocateDirect(
                             4 * DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE);
         }
-        imgData.order(ByteOrder.nativeOrder());
+        //imgData.order(ByteOrder.nativeOrder());
 
         // initialize probabilities array. The datatypes that array holds depends if the input data needs to be quantized or not
         if(quant){
-            labelProbArrayB= new byte[1][labelList.size()];
+            //labelProbArrayB= new byte[1][labelList.size()];
         } else {
             labelProbArray = new float[1][labelList.size()];
         }
@@ -176,7 +246,27 @@ public class Classify extends AppCompatActivity {
                 convertBitmapToByteBuffer(bitmap);
                 // pass byte data to the graph
                 if(quant){
-                    tflite.run(imgData, labelProbArrayB);
+                    String line = "wth";
+                    Utils converterCV = new Utils();
+                    Bitmap bmp32 = bitmap_orig.copy(Bitmap.Config.ARGB_8888, true);
+                    converterCV.bitmapToMat(bmp32, mRgba);
+                    if (mAbsoluteFaceSize == 0) {
+                        int height = mRgba.rows();
+                        if (Math.round(height * mRelativeFaceSize) > 0) {
+                            mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
+                        }
+
+                    }
+                    MatOfRect damages = new MatOfRect();
+                    if (mJavaDetector != null)
+                        mJavaDetector.detectMultiScale(mRgba, damages, 1.1, 2, 2, new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
+                    Rect[] damagesArray = damages.toArray();
+                    if (damagesArray.length == 0) {
+                        textview.setText("no damage");
+                    } else {
+                        //textview.setText("with damage");
+                        Toast.makeText(Classify.this, "with damage", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     tflite.run(imgData, labelProbArray);
                     printTopKLabels();
@@ -195,6 +285,19 @@ public class Classify extends AppCompatActivity {
             selected_image.setRotation(selected_image.getRotation() + 90);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback);
+        } else {
+            Log.d(TAG, "OpenCV library found inside package. Using it!");
+            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
 
@@ -223,9 +326,9 @@ public class Classify extends AppCompatActivity {
                 // get rgb values from intValues where each int holds the rgb values for a pixel.
                 // if quantized, convert each rgb value to a byte, otherwise to a float
                 if(quant){
-                    imgData.put((byte) ((val >> 16) & 0xFF));
-                    imgData.put((byte) ((val >> 8) & 0xFF));
-                    imgData.put((byte) (val & 0xFF));
+//                    imgData.put((byte) ((val >> 16) & 0xFF));
+//                    imgData.put((byte) ((val >> 8) & 0xFF));
+//                    imgData.put((byte) (val & 0xFF));
                 } else {
                     imgData.putFloat((((val >> 16) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
                     imgData.putFloat((((val >> 8) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
@@ -255,8 +358,8 @@ public class Classify extends AppCompatActivity {
         // add all results to priority queue
         for (int i = 0; i < labelList.size(); ++i) {
             if(quant){
-                sortedLabels.add(
-                        new AbstractMap.SimpleEntry<>(labelList.get(i), (labelProbArrayB[0][i] & 0xff) / 255.0f));
+//                sortedLabels.add(
+//                        new AbstractMap.SimpleEntry<>(labelList.get(i), (labelProbArrayB[0][i] & 0xff) / 255.0f));
             } else {
                 sortedLabels.add(
                         new AbstractMap.SimpleEntry<>(labelList.get(i), labelProbArray[0][i]));
