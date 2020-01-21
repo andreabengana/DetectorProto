@@ -195,8 +195,9 @@ public class Classify extends AppCompatActivity {
             imgData =
                     ByteBuffer.allocateDirect(
                             4 * DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE);
+            imgData.order(ByteOrder.nativeOrder());
         }
-        imgData.order(ByteOrder.nativeOrder());
+
 
         // initialize probabilities array. The datatypes that array holds depends if the input data needs to be quantized or not
         if(quant){
@@ -347,7 +348,7 @@ public class Classify extends AppCompatActivity {
         String line;
         while ((line = reader.readLine()) != null) {
             labelList.add(line);
-            Toast.makeText(this, line, Toast.LENGTH_LONG).show();
+            //Toast.makeText(this, line, Toast.LENGTH_LONG).show();
         }
         reader.close();
         return labelList;
