@@ -196,7 +196,7 @@ public class Classify extends AppCompatActivity {
                     ByteBuffer.allocateDirect(
                             4 * DIM_IMG_SIZE_X * DIM_IMG_SIZE_Y * DIM_PIXEL_SIZE);
         }
-        //imgData.order(ByteOrder.nativeOrder());
+        imgData.order(ByteOrder.nativeOrder());
 
         // initialize probabilities array. The datatypes that array holds depends if the input data needs to be quantized or not
         if(quant){
