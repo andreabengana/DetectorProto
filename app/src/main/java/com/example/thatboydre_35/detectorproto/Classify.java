@@ -173,7 +173,7 @@ public class Classify extends AppCompatActivity {
 
 
 
-        textview = (TextView) findViewById(R.id.textView);
+
         super.onCreate(savedInstanceState);
 
         //initilize graph and labels
@@ -212,6 +212,7 @@ public class Classify extends AppCompatActivity {
         label1 = (TextView) findViewById(R.id.label1);
         label2 = (TextView) findViewById(R.id.label2);
         label3 = (TextView) findViewById(R.id.label3);
+        textview = (TextView) findViewById(R.id.textView);
         // displays the probabilities of top labels
         Confidence1 = (TextView) findViewById(R.id.Confidence1);
         Confidence2 = (TextView) findViewById(R.id.Confidence2);
@@ -262,11 +263,15 @@ public class Classify extends AppCompatActivity {
                     if (mJavaDetector != null)
                         mJavaDetector.detectMultiScale(mRgba, damages, 1.1, 2, 2, new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
                     Rect[] damagesArray = damages.toArray();
+
+
                     if (damagesArray.length == 0) {
-                        textview.setText("no damage");
+                        Toast.makeText(Classify.this, "without damage", Toast.LENGTH_SHORT).show();
+                        textview.setText(R.string.whole);
                     } else {
                         //textview.setText("with damage");
                         Toast.makeText(Classify.this, "with damage", Toast.LENGTH_SHORT).show();
+                        textview.setText(R.string.damage);
                     }
                 } else {
                     tflite.run(imgData, labelProbArray);
@@ -283,7 +288,7 @@ public class Classify extends AppCompatActivity {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
             selected_image.setImageBitmap(bitmap);
             // not sure why this happens, but without this the image appears on its side
-            selected_image.setRotation(selected_image.getRotation() + 90);
+            selected_image.setRotation(selected_image.getRotation() + 360);
         } catch (IOException e) {
             e.printStackTrace();
         }

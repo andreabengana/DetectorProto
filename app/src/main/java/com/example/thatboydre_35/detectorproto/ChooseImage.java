@@ -37,6 +37,7 @@ public class ChooseImage extends AppCompatActivity {
     // button for each available classifier
     private Button inceptionFloat;
     private Button haarCascade;
+    private Button cameraCNN;
 
     // for permission requests
     public static final int REQUEST_PERMISSION = 300;
@@ -82,24 +83,21 @@ public class ChooseImage extends AppCompatActivity {
                 openCameraIntent();
             }
         });
+
+        cameraCNN = (Button) findViewById(R.id.opencamera);
+        cameraCNN.setOnClickListener(new View.OnClickListener() {
+            @Override
+
+            public void onClick(View v) {
+                quant = false;
+                // open camera
+                openCamera();
+            }
+        });
     }
 
 
     private void openCameraIntent(){
-//        ContentValues values = new ContentValues();
-//        values.put(MediaStore.Images.Media.TITLE, "New Picture");
-//        values.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera");
-//        // tell camera where to store the resulting picture
-//        imageUri = getContentResolver().insert(
-//                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-//        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-//        if (intent.resolveActivity(getPackageManager()) != null) {
-//            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
-//        }
-//        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
-//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-//        // start camera, and wait for it to finish
-//        //startActivityForResult(intent, REQUEST_IMAGE);
 
         Intent intent = new Intent();
         intent.setType("*/*");
@@ -109,25 +107,45 @@ public class ChooseImage extends AppCompatActivity {
 
     }
 
+    private void openCamera(){
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.TITLE, "New Picture");
+        values.put(MediaStore.Images.Media._ID, "asdf");
+        //values.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera");
+        // tell camera where to store the resulting picture
+        imageUri = getContentResolver().insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
+        }
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        //start camera, and wait for it to finish
+        startActivityForResult(intent, REQUEST_IMAGE);
+
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
         super.onActivityResult(requestCode, resultCode, data);
-        // if the camera activity is finished, obtained the uri, crop it to make it square, and send it to 'Classify' activity
-        //if(requestCode == REQUEST_IMAGE && resultCode == RESULT_OK) {
         if(requestCode == PICK_IMAGE) {
-//            try {
-//                Uri source_uri = data.getData();
-//                Uri dest_uri = Uri.fromFile(new File(getCacheDir(), "cropped"));
-//                // need to crop it to square image as CNN's always required square input
-//                Crop.of(source_uri, dest_uri).asSquare().start(this);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
             Uri uriData = data.getData();
             String currentImagePath;
             currentImagePath = getPath(getApplicationContext(), uriData);
             Uri dest_uri = Uri.fromFile(new File(getCacheDir(), "cropped"));
             Crop.of(uriData, dest_uri).asSquare().start(this);
+        }
+
+        else if(requestCode == REQUEST_IMAGE && resultCode == RESULT_OK) {
+            try {
+                Uri source_uri = data.getData();
+                Uri dest_uri = Uri.fromFile(new File(getCacheDir(), "cropped"));
+                // need to crop it to square image as CNN's always required square input
+                Crop.of(source_uri, dest_uri).asSquare().start(this);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         // if cropping acitivty is finished, get the resulting cropped image uri and send it to 'Classify' activity
