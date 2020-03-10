@@ -240,6 +240,7 @@ public class Classify extends AppCompatActivity {
         classify_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 // get current bitmap from imageView
                 Bitmap bitmap_orig = ((BitmapDrawable)selected_image.getDrawable()).getBitmap();
                 // resize the bitmap to the required input size to the CNN
@@ -248,6 +249,37 @@ public class Classify extends AppCompatActivity {
                 convertBitmapToByteBuffer(bitmap);
                 // pass byte data to the graph
                 if(quant){
+                    // freeze this block, defense panel wants evals simultaneously
+
+//                    Utils converterCV = new Utils();
+//                    Bitmap bmp32 = bitmap_orig.copy(Bitmap.Config.ARGB_8888, true);
+//                    converterCV.bitmapToMat(bmp32, mRgba);
+//                    if (mAbsoluteFaceSize == 0) {
+//                        int height = mRgba.rows();
+//                        if (Math.round(height * mRelativeFaceSize) > 0) {
+//                            mAbsoluteFaceSize = Math.round(height * mRelativeFaceSize);
+//                        }
+//
+//                    }
+//                    MatOfRect damages = new MatOfRect();
+//                    if (mJavaDetector != null)
+//                        mJavaDetector.detectMultiScale(mRgba, damages, 1.1, 2, 2, new Size(mAbsoluteFaceSize, mAbsoluteFaceSize), new Size());
+//                    Rect[] damagesArray = damages.toArray();
+//
+//
+//                    if (damagesArray.length == 0) {
+//                        Toast.makeText(Classify.this, "without damage", Toast.LENGTH_SHORT).show();
+//                        //textview.setText(R.string.whole);
+//                        Confidence1.setText(R.string.whole);
+//                    } else {
+//                        Toast.makeText(Classify.this, "with damage", Toast.LENGTH_SHORT).show();
+//                        //textview.setText(R.string.damage);
+//                        Confidence1.setText(R.string.damage);
+//                    }
+                } else {
+                    tflite.run(imgData, labelProbArray);
+                    printTopKLabels();
+
                     String line = "wth";
                     Utils converterCV = new Utils();
                     Bitmap bmp32 = bitmap_orig.copy(Bitmap.Config.ARGB_8888, true);
@@ -267,18 +299,14 @@ public class Classify extends AppCompatActivity {
 
                     if (damagesArray.length == 0) {
                         Toast.makeText(Classify.this, "without damage", Toast.LENGTH_SHORT).show();
-                        textview.setText(R.string.whole);
+                        //textview.setText(R.string.whole);
+                        Confidence1.setText(R.string.whole);
                     } else {
-                        //textview.setText("with damage");
                         Toast.makeText(Classify.this, "with damage", Toast.LENGTH_SHORT).show();
-                        textview.setText(R.string.damage);
+                        //textview.setText(R.string.damage);
+                        Confidence1.setText(R.string.damage);
                     }
-                } else {
-                    tflite.run(imgData, labelProbArray);
-                    printTopKLabels();
                 }
-
-//                printTopKLabels();
             }
         });
 
@@ -307,7 +335,7 @@ public class Classify extends AppCompatActivity {
         }
     }
 
-    // loads tflite grapg from file
+    // loads tflite graph from file
     private MappedByteBuffer loadModelFile() throws IOException {
         AssetFileDescriptor fileDescriptor = this.getAssets().openFd(chosen);
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
@@ -384,12 +412,12 @@ public class Classify extends AppCompatActivity {
         }
 
         // set the corresponding textviews with the results
-        label1.setText("1. "+topLables[2]);
-        label2.setText("2. "+topLables[1]);
-        label3.setText("3. "+topLables[0]);
-        Confidence1.setText(topConfidence[2]);
-        Confidence2.setText(topConfidence[1]);
-        Confidence3.setText(topConfidence[0]);
+        label1.setText("1. "+topLables[1]);
+        //label2.setText("2. "+topLables[1]);
+        //label3.setText("3. "+topLables[0]);
+//        Confidence1.setText(topConfidence[2]);
+//        Confidence2.setText(topConfidence[1]);
+//        Confidence3.setText(topConfidence[0]);
     }
 
 
